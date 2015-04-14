@@ -19,7 +19,7 @@
 #include <linux/of_device.h>
 #include <linux/delay.h>
 #include <linux/spinlock.h>
-#include <ztemt_hw_version.h>
+#include "ztemt_hw_version.h"
 
 //#define CONFIG_ZTEMT_HW_VERSION_DEBUG
 #ifdef CONFIG_ZTEMT_HW_VERSION_DEBUG

@@ -430,7 +430,7 @@ struct qpnp_chg_chip {
 	#endif
 };
 #ifdef CONFIG_ZTEMT_POWER_DEBUG
-#include <../../arch/arm/mach-msm/clock.h>
+#include <../../../arch/arm/mach-msm/clock.h>
 #define POWER_MONITOR_PERIOD_MS	10000
 #define DRV_NAME "zte_power_debug"
 static int power_debug_switch=1;
