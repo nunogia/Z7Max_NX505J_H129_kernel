@@ -1,0 +1,10 @@
+--- arch/arm/boot/compressed/Makefile
++++ arch/arm/boot/compressed/Makefile
+@@ -126,7 +126,6 @@
+ endif
+ 
+ ccflags-y := -fpic -fno-builtin -I$(obj)
+-asflags-y := -Wa,-march=armv7-a
+ 
+ # Supply kernel BSS size to the decompressor via a linker symbol.
+ KBSS_SZ = $(shell $(CROSS_COMPILE)size $(obj)/../../../../vmlinux | \

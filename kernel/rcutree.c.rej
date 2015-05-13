@@ -1,0 +1,11 @@
+--- kernel/rcutree.c
++++ kernel/rcutree.c
+@@ -1529,7 +1529,7 @@
+ {
+ 	unsigned long flags;
+ 	struct rcu_head *next, *list, **tail;
+-	int bl, count, count_lazy, i;
++	long bl, count, count_lazy, i;
+ 
+ 	/* If no callbacks are ready, just return.*/
+ 	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {

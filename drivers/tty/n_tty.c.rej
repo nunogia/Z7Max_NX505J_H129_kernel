@@ -1,0 +1,10 @@
+--- drivers/tty/n_tty.c
++++ drivers/tty/n_tty.c
+@@ -2007,7 +2016,6 @@
+ 			if (tty->ops->flush_chars)
+ 				tty->ops->flush_chars(tty);
+ 		} else {
+-
+ 			while (nr > 0) {
+ 				mutex_lock(&tty->output_lock);
+ 				c = tty->ops->write(tty, b, nr);

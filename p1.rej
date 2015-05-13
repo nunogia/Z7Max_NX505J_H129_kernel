@@ -1,0 +1,16 @@
+--- Kconfig
++++ Kconfig
+@@ -132,4 +132,6 @@
+ 
+ source "drivers/staging/ozwpan/Kconfig"
+ 
++source "drivers/staging/prima/Kconfig"
++
+ endif # STAGING
+--- Makefile
++++ Makefile
+@@ -57,3 +57,4 @@
+ obj-$(CONFIG_PHONE)		+= telephony/
+ obj-$(CONFIG_RAMSTER)		+= ramster/
+ obj-$(CONFIG_USB_WPAN_HCD)	+= ozwpan/
++obj-$(CONFIG_PRIMA_WLAN)	+= prima/
