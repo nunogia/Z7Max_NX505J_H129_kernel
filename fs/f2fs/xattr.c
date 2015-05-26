@@ -82,11 +82,7 @@ static int f2fs_xattr_generic_get(struct dentry *dentry, const char *name,
 	}
 	if (strcmp(name, "") == 0)
 		return -EINVAL;
-<<<<<<< HEAD
 	return f2fs_getxattr(dentry->d_inode, type, name, buffer, size);
-=======
-	return f2fs_getxattr(dentry->d_inode, type, name, buffer, size, NULL);
->>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 }
 
 static int f2fs_xattr_generic_set(struct dentry *dentry, const char *name,
@@ -138,12 +134,7 @@ static int f2fs_xattr_advise_get(struct dentry *dentry, const char *name,
 	if (strcmp(name, "") != 0)
 		return -EINVAL;
 
-<<<<<<< HEAD
 	*((char *)buffer) = F2FS_I(inode)->i_advise;
-=======
-	if (buffer)
-		*((char *)buffer) = F2FS_I(inode)->i_advise;
->>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	return sizeof(char);
 }
 
@@ -160,10 +151,6 @@ static int f2fs_xattr_advise_set(struct dentry *dentry, const char *name,
 		return -EINVAL;
 
 	F2FS_I(inode)->i_advise |= *(char *)value;
-<<<<<<< HEAD
-=======
-	mark_inode_dirty(inode);
->>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	return 0;
 }
 
@@ -410,11 +397,7 @@ static inline int write_all_xattrs(struct inode *inode, __u32 hsize,
 }
 
 int f2fs_getxattr(struct inode *inode, int index, const char *name,
-<<<<<<< HEAD
 		void *buffer, size_t buffer_size)
-=======
-		void *buffer, size_t buffer_size, struct page *ipage)
->>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 {
 	struct f2fs_xattr_entry *entry;
 	void *base_addr;
@@ -428,11 +411,7 @@ int f2fs_getxattr(struct inode *inode, int index, const char *name,
 	if (len > F2FS_NAME_LEN)
 		return -ERANGE;
 
-<<<<<<< HEAD
 	base_addr = read_all_xattrs(inode, NULL);
-=======
-	base_addr = read_all_xattrs(inode, ipage);
->>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (!base_addr)
 		return -ENOMEM;
 

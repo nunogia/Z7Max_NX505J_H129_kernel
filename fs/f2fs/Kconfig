@@ -1,9 +1,5 @@
 config F2FS_FS
-<<<<<<< HEAD
 	tristate "F2FS filesystem support (EXPERIMENTAL)"
-=======
-	tristate "F2FS filesystem support"
->>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	depends on BLOCK
 	help
 	  F2FS is based on Log-structured File System (LFS), which supports
@@ -75,16 +71,3 @@ config F2FS_CHECK_FS
 	  Enables BUG_ONs which check the filesystem consistency in runtime.
 
 	  If you want to improve the performance, say N.
-<<<<<<< HEAD
-=======
-
-config F2FS_IO_TRACE
-	bool "F2FS IO tracer"
-	depends on F2FS_FS
-	depends on FUNCTION_TRACER
-	help
-	  F2FS IO trace is based on a function trace, which gathers process
-	  information and block IO patterns in the filesystem level.
-
-	  If unsure, say N.
->>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
