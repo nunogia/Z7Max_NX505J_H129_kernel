@@ -62,7 +62,11 @@ static struct posix_acl *f2fs_acl_from_disk(const char *value, size_t size)
 	if (count == 0)
 		return NULL;
 
+<<<<<<< HEAD
 	acl = posix_acl_alloc(count, GFP_KERNEL);
+=======
+	acl = posix_acl_alloc(count, GFP_NOFS);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (!acl)
 		return ERR_PTR(-ENOMEM);
 
@@ -108,7 +112,11 @@ static void *f2fs_acl_to_disk(const struct posix_acl *acl, size_t *size)
 	int i;
 
 	f2fs_acl = kmalloc(sizeof(struct f2fs_acl_header) + acl->a_count *
+<<<<<<< HEAD
 			sizeof(struct f2fs_acl_entry), GFP_KERNEL);
+=======
+			sizeof(struct f2fs_acl_entry), GFP_NOFS);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (!f2fs_acl)
 		return ERR_PTR(-ENOMEM);
 
@@ -146,7 +154,12 @@ fail:
 	return ERR_PTR(-EINVAL);
 }
 
+<<<<<<< HEAD
 struct posix_acl *f2fs_get_acl(struct inode *inode, int type)
+=======
+static struct posix_acl *__f2fs_get_acl(struct inode *inode, int type,
+						struct page *dpage)
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 {
 	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
 	int name_index = F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT;
@@ -164,12 +177,21 @@ struct posix_acl *f2fs_get_acl(struct inode *inode, int type)
 	if (type == ACL_TYPE_ACCESS)
 		name_index = F2FS_XATTR_INDEX_POSIX_ACL_ACCESS;
 
+<<<<<<< HEAD
 	retval = f2fs_getxattr(inode, name_index, "", NULL, 0);
+=======
+	retval = f2fs_getxattr(inode, name_index, "", NULL, 0, dpage);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (retval > 0) {
 		value = kmalloc(retval, GFP_F2FS_ZERO);
 		if (!value)
 			return ERR_PTR(-ENOMEM);
+<<<<<<< HEAD
 		retval = f2fs_getxattr(inode, name_index, "", value, retval);
+=======
+		retval = f2fs_getxattr(inode, name_index, "", value,
+							retval, dpage);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	}
 
 	if (retval > 0)
@@ -186,6 +208,14 @@ struct posix_acl *f2fs_get_acl(struct inode *inode, int type)
 	return acl;
 }
 
+<<<<<<< HEAD
+=======
+struct posix_acl *f2fs_get_acl(struct inode *inode, int type)
+{
+	return __f2fs_get_acl(inode, type, NULL);
+}
+
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 static int f2fs_set_acl(struct inode *inode, int type,
 			struct posix_acl *acl, struct page *ipage)
 {
@@ -227,7 +257,11 @@ static int f2fs_set_acl(struct inode *inode, int type,
 	if (acl) {
 		value = f2fs_acl_to_disk(acl, &size);
 		if (IS_ERR(value)) {
+<<<<<<< HEAD
 			cond_clear_inode_flag(fi, FI_ACL_MODE);
+=======
+			clear_inode_flag(fi, FI_ACL_MODE);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 			return (int)PTR_ERR(value);
 		}
 	}
@@ -238,11 +272,20 @@ static int f2fs_set_acl(struct inode *inode, int type,
 	if (!error)
 		set_cached_acl(inode, type, acl);
 
+<<<<<<< HEAD
 	cond_clear_inode_flag(fi, FI_ACL_MODE);
 	return error;
 }
 
 int f2fs_init_acl(struct inode *inode, struct inode *dir, struct page *ipage)
+=======
+	clear_inode_flag(fi, FI_ACL_MODE);
+	return error;
+}
+
+int f2fs_init_acl(struct inode *inode, struct inode *dir, struct page *ipage,
+							struct page *dpage)
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 {
 	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
 	struct posix_acl *acl = NULL;
@@ -250,7 +293,11 @@ int f2fs_init_acl(struct inode *inode, struct inode *dir, struct page *ipage)
 
 	if (!S_ISLNK(inode->i_mode)) {
 		if (test_opt(sbi, POSIX_ACL)) {
+<<<<<<< HEAD
 			acl = f2fs_get_acl(dir, ACL_TYPE_DEFAULT);
+=======
+			acl = __f2fs_get_acl(dir, ACL_TYPE_DEFAULT, dpage);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 			if (IS_ERR(acl))
 				return PTR_ERR(acl);
 		}

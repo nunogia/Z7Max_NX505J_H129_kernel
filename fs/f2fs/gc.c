@@ -24,8 +24,11 @@
 #include "gc.h"
 #include <trace/events/f2fs.h>
 
+<<<<<<< HEAD
 static struct kmem_cache *winode_slab;
 
+=======
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 static int gc_thread_func(void *data)
 {
 	struct f2fs_sb_info *sbi = data;
@@ -46,7 +49,11 @@ static int gc_thread_func(void *data)
 			break;
 
 		if (sbi->sb->s_frozen >= SB_FREEZE_WRITE) {
+<<<<<<< HEAD
 			wait_ms = increase_sleep_time(gc_th, wait_ms);
+=======
+			increase_sleep_time(gc_th, &wait_ms);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 			continue;
 		}
 
@@ -67,15 +74,25 @@ static int gc_thread_func(void *data)
 			continue;
 
 		if (!is_idle(sbi)) {
+<<<<<<< HEAD
 			wait_ms = increase_sleep_time(gc_th, wait_ms);
+=======
+			increase_sleep_time(gc_th, &wait_ms);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 			mutex_unlock(&sbi->gc_mutex);
 			continue;
 		}
 
 		if (has_enough_invalid_blocks(sbi))
+<<<<<<< HEAD
 			wait_ms = decrease_sleep_time(gc_th, wait_ms);
 		else
 			wait_ms = increase_sleep_time(gc_th, wait_ms);
+=======
+			decrease_sleep_time(gc_th, &wait_ms);
+		else
+			increase_sleep_time(gc_th, &wait_ms);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 
 		stat_inc_bggc_count(sbi);
 
@@ -96,8 +113,11 @@ int start_gc_thread(struct f2fs_sb_info *sbi)
 	dev_t dev = sbi->sb->s_bdev->bd_dev;
 	int err = 0;
 
+<<<<<<< HEAD
 	if (!test_opt(sbi, BG_GC))
 		goto out;
+=======
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	gc_th = kmalloc(sizeof(struct f2fs_gc_kthread), GFP_KERNEL);
 	if (!gc_th) {
 		err = -ENOMEM;
@@ -193,7 +213,11 @@ static unsigned int check_bg_victims(struct f2fs_sb_info *sbi)
 	 * selected by background GC before.
 	 * Those segments guarantee they have small valid blocks.
 	 */
+<<<<<<< HEAD
 	for_each_set_bit(secno, dirty_i->victim_secmap, TOTAL_SECS(sbi)) {
+=======
+	for_each_set_bit(secno, dirty_i->victim_secmap, MAIN_SECS(sbi)) {
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 		if (sec_usage_check(sbi, secno))
 			continue;
 		clear_bit(secno, dirty_i->victim_secmap);
@@ -263,14 +287,22 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
 	unsigned int secno, max_cost;
 	int nsearched = 0;
 
+<<<<<<< HEAD
+=======
+	mutex_lock(&dirty_i->seglist_lock);
+
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	p.alloc_mode = alloc_mode;
 	select_policy(sbi, gc_type, type, &p);
 
 	p.min_segno = NULL_SEGNO;
 	p.min_cost = max_cost = get_max_cost(sbi, &p);
 
+<<<<<<< HEAD
 	mutex_lock(&dirty_i->seglist_lock);
 
+=======
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (p.alloc_mode == LFS && gc_type == FG_GC) {
 		p.min_segno = check_bg_victims(sbi);
 		if (p.min_segno != NULL_SEGNO)
@@ -281,9 +313,14 @@ static int get_victim_by_default(struct f2fs_sb_info *sbi,
 		unsigned long cost;
 		unsigned int segno;
 
+<<<<<<< HEAD
 		segno = find_next_bit(p.dirty_segmap,
 						TOTAL_SEGS(sbi), p.offset);
 		if (segno >= TOTAL_SEGS(sbi)) {
+=======
+		segno = find_next_bit(p.dirty_segmap, MAIN_SEGS(sbi), p.offset);
+		if (segno >= MAIN_SEGS(sbi)) {
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 			if (sbi->last_victim[p.gc_mode]) {
 				sbi->last_victim[p.gc_mode] = 0;
 				p.offset = 0;
@@ -341,6 +378,7 @@ static const struct victim_selection default_v_ops = {
 	.get_victim = get_victim_by_default,
 };
 
+<<<<<<< HEAD
 static struct inode *find_gc_inode(nid_t ino, struct list_head *ilist)
 {
 	struct inode_entry *ie;
@@ -372,6 +410,41 @@ static void put_gc_inode(struct list_head *ilist)
 		iput(ie->inode);
 		list_del(&ie->list);
 		kmem_cache_free(winode_slab, ie);
+=======
+static struct inode *find_gc_inode(struct gc_inode_list *gc_list, nid_t ino)
+{
+	struct inode_entry *ie;
+
+	ie = radix_tree_lookup(&gc_list->iroot, ino);
+	if (ie)
+		return ie->inode;
+	return NULL;
+}
+
+static void add_gc_inode(struct gc_inode_list *gc_list, struct inode *inode)
+{
+	struct inode_entry *new_ie;
+
+	if (inode == find_gc_inode(gc_list, inode->i_ino)) {
+		iput(inode);
+		return;
+	}
+	new_ie = f2fs_kmem_cache_alloc(inode_entry_slab, GFP_NOFS);
+	new_ie->inode = inode;
+
+	f2fs_radix_tree_insert(&gc_list->iroot, inode->i_ino, new_ie);
+	list_add_tail(&new_ie->list, &gc_list->ilist);
+}
+
+static void put_gc_inode(struct gc_inode_list *gc_list)
+{
+	struct inode_entry *ie, *next_ie;
+	list_for_each_entry_safe(ie, next_ie, &gc_list->ilist, list) {
+		radix_tree_delete(&gc_list->iroot, ie->inode->i_ino);
+		iput(ie->inode);
+		list_del(&ie->list);
+		kmem_cache_free(inode_entry_slab, ie);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	}
 }
 
@@ -423,6 +496,15 @@ next_step:
 		if (IS_ERR(node_page))
 			continue;
 
+<<<<<<< HEAD
+=======
+		/* block may become invalid during get_node_page */
+		if (check_valid_map(sbi, segno, off) == 0) {
+			f2fs_put_page(node_page, 1);
+			continue;
+		}
+
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 		/* set page dirty and write it */
 		if (gc_type == FG_GC) {
 			f2fs_wait_on_page_writeback(node_page, NODE);
@@ -432,7 +514,11 @@ next_step:
 				set_page_dirty(node_page);
 		}
 		f2fs_put_page(node_page, 1);
+<<<<<<< HEAD
 		stat_inc_node_blk_count(sbi, 1);
+=======
+		stat_inc_node_blk_count(sbi, 1, gc_type);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	}
 
 	if (initial) {
@@ -531,7 +617,11 @@ static void move_data_page(struct inode *inode, struct page *page, int gc_type)
 		f2fs_wait_on_page_writeback(page, DATA);
 
 		if (clear_page_dirty_for_io(page))
+<<<<<<< HEAD
 			inode_dec_dirty_dents(inode);
+=======
+			inode_dec_dirty_pages(inode);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 		set_cold_data(page);
 		do_write_data_page(page, &fio);
 		clear_cold_data(page);
@@ -548,7 +638,11 @@ out:
  * the victim data block is ignored.
  */
 static void gc_data_segment(struct f2fs_sb_info *sbi, struct f2fs_summary *sum,
+<<<<<<< HEAD
 		struct list_head *ilist, unsigned int segno, int gc_type)
+=======
+		struct gc_inode_list *gc_list, unsigned int segno, int gc_type)
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 {
 	struct super_block *sb = sbi->sb;
 	struct f2fs_summary *entry;
@@ -600,6 +694,7 @@ next_step:
 
 			data_page = find_data_page(inode,
 					start_bidx + ofs_in_node, false);
+<<<<<<< HEAD
 			if (IS_ERR(data_page))
 				goto next_iput;
 
@@ -621,6 +716,29 @@ next_step:
 		continue;
 next_iput:
 		iput(inode);
+=======
+			if (IS_ERR(data_page)) {
+				iput(inode);
+				continue;
+			}
+
+			f2fs_put_page(data_page, 0);
+			add_gc_inode(gc_list, inode);
+			continue;
+		}
+
+		/* phase 3 */
+		inode = find_gc_inode(gc_list, dni.ino);
+		if (inode) {
+			start_bidx = start_bidx_of_node(nofs, F2FS_I(inode));
+			data_page = get_lock_data_page(inode,
+						start_bidx + ofs_in_node);
+			if (IS_ERR(data_page))
+				continue;
+			move_data_page(inode, data_page, gc_type);
+			stat_inc_data_blk_count(sbi, 1, gc_type);
+		}
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	}
 
 	if (++phase < 4)
@@ -641,18 +759,33 @@ next_iput:
 }
 
 static int __get_victim(struct f2fs_sb_info *sbi, unsigned int *victim,
+<<<<<<< HEAD
 						int gc_type, int type)
 {
 	struct sit_info *sit_i = SIT_I(sbi);
 	int ret;
 	mutex_lock(&sit_i->sentry_lock);
 	ret = DIRTY_I(sbi)->v_ops->get_victim(sbi, victim, gc_type, type, LFS);
+=======
+			int gc_type)
+{
+	struct sit_info *sit_i = SIT_I(sbi);
+	int ret;
+
+	mutex_lock(&sit_i->sentry_lock);
+	ret = DIRTY_I(sbi)->v_ops->get_victim(sbi, victim, gc_type,
+					      NO_CHECK_TYPE, LFS);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	mutex_unlock(&sit_i->sentry_lock);
 	return ret;
 }
 
 static void do_garbage_collect(struct f2fs_sb_info *sbi, unsigned int segno,
+<<<<<<< HEAD
 				struct list_head *ilist, int gc_type)
+=======
+				struct gc_inode_list *gc_list, int gc_type)
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 {
 	struct page *sum_page;
 	struct f2fs_summary_block *sum;
@@ -670,12 +803,20 @@ static void do_garbage_collect(struct f2fs_sb_info *sbi, unsigned int segno,
 		gc_node_segment(sbi, sum->entries, segno, gc_type);
 		break;
 	case SUM_TYPE_DATA:
+<<<<<<< HEAD
 		gc_data_segment(sbi, sum->entries, ilist, segno, gc_type);
+=======
+		gc_data_segment(sbi, sum->entries, gc_list, segno, gc_type);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 		break;
 	}
 	blk_finish_plug(&plug);
 
+<<<<<<< HEAD
 	stat_inc_seg_count(sbi, GET_SUM_TYPE((&sum->footer)));
+=======
+	stat_inc_seg_count(sbi, GET_SUM_TYPE((&sum->footer)), gc_type);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	stat_inc_call_count(sbi->stat_info);
 
 	f2fs_put_page(sum_page, 1);
@@ -683,13 +824,26 @@ static void do_garbage_collect(struct f2fs_sb_info *sbi, unsigned int segno,
 
 int f2fs_gc(struct f2fs_sb_info *sbi)
 {
+<<<<<<< HEAD
 	struct list_head ilist;
+=======
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	unsigned int segno, i;
 	int gc_type = BG_GC;
 	int nfree = 0;
 	int ret = -1;
+<<<<<<< HEAD
 
 	INIT_LIST_HEAD(&ilist);
+=======
+	struct cp_control cpc;
+	struct gc_inode_list gc_list = {
+		.ilist = LIST_HEAD_INIT(gc_list.ilist),
+		.iroot = RADIX_TREE_INIT(GFP_NOFS),
+	};
+
+	cpc.reason = __get_cp_reason(sbi);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 gc_more:
 	if (unlikely(!(sbi->sb->s_flags & MS_ACTIVE)))
 		goto stop;
@@ -698,10 +852,17 @@ gc_more:
 
 	if (gc_type == BG_GC && has_not_enough_free_secs(sbi, nfree)) {
 		gc_type = FG_GC;
+<<<<<<< HEAD
 		write_checkpoint(sbi, false);
 	}
 
 	if (!__get_victim(sbi, &segno, gc_type, NO_CHECK_TYPE))
+=======
+		write_checkpoint(sbi, &cpc);
+	}
+
+	if (!__get_victim(sbi, &segno, gc_type))
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 		goto stop;
 	ret = 0;
 
@@ -711,7 +872,11 @@ gc_more:
 								META_SSA);
 
 	for (i = 0; i < sbi->segs_per_sec; i++)
+<<<<<<< HEAD
 		do_garbage_collect(sbi, segno + i, &ilist, gc_type);
+=======
+		do_garbage_collect(sbi, segno + i, &gc_list, gc_type);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 
 	if (gc_type == FG_GC) {
 		sbi->cur_victim_sec = NULL_SEGNO;
@@ -723,11 +888,19 @@ gc_more:
 		goto gc_more;
 
 	if (gc_type == FG_GC)
+<<<<<<< HEAD
 		write_checkpoint(sbi, false);
 stop:
 	mutex_unlock(&sbi->gc_mutex);
 
 	put_gc_inode(&ilist);
+=======
+		write_checkpoint(sbi, &cpc);
+stop:
+	mutex_unlock(&sbi->gc_mutex);
+
+	put_gc_inode(&gc_list);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	return ret;
 }
 
@@ -735,6 +908,7 @@ void build_gc_manager(struct f2fs_sb_info *sbi)
 {
 	DIRTY_I(sbi)->v_ops = &default_v_ops;
 }
+<<<<<<< HEAD
 
 int __init create_gc_caches(void)
 {
@@ -749,3 +923,5 @@ void destroy_gc_caches(void)
 {
 	kmem_cache_destroy(winode_slab);
 }
+=======
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9

@@ -14,6 +14,40 @@
 #include "node.h"
 #include "segment.h"
 
+<<<<<<< HEAD
+=======
+/*
+ * Roll forward recovery scenarios.
+ *
+ * [Term] F: fsync_mark, D: dentry_mark
+ *
+ * 1. inode(x) | CP | inode(x) | dnode(F)
+ * -> Update the latest inode(x).
+ *
+ * 2. inode(x) | CP | inode(F) | dnode(F)
+ * -> No problem.
+ *
+ * 3. inode(x) | CP | dnode(F) | inode(x)
+ * -> Recover to the latest dnode(F), and drop the last inode(x)
+ *
+ * 4. inode(x) | CP | dnode(F) | inode(F)
+ * -> No problem.
+ *
+ * 5. CP | inode(x) | dnode(F)
+ * -> The inode(DF) was missing. Should drop this dnode(F).
+ *
+ * 6. CP | inode(DF) | dnode(F)
+ * -> No problem.
+ *
+ * 7. CP | dnode(F) | inode(DF)
+ * -> If f2fs_iget fails, then goto next to find inode(DF).
+ *
+ * 8. CP | dnode(F) | inode(x)
+ * -> If f2fs_iget fails, then goto next to find inode(DF).
+ *    But it will fail due to no inode(DF).
+ */
+
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 static struct kmem_cache *fsync_entry_slab;
 
 bool space_for_roll_forward(struct f2fs_sb_info *sbi)
@@ -36,7 +70,11 @@ static struct fsync_inode_entry *get_fsync_inode(struct list_head *head,
 	return NULL;
 }
 
+<<<<<<< HEAD
 static int recover_dentry(struct page *ipage, struct inode *inode)
+=======
+static int recover_dentry(struct inode *inode, struct page *ipage)
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 {
 	struct f2fs_inode *raw_inode = F2FS_INODE(ipage);
 	nid_t pino = le32_to_cpu(raw_inode->i_pino);
@@ -62,10 +100,16 @@ static int recover_dentry(struct page *ipage, struct inode *inode)
 	}
 retry:
 	de = f2fs_find_entry(dir, &name, &page);
+<<<<<<< HEAD
 	if (de && inode->i_ino == le32_to_cpu(de->ino)) {
 		clear_inode_flag(F2FS_I(inode), FI_INC_LINK);
 		goto out_unmap_put;
 	}
+=======
+	if (de && inode->i_ino == le32_to_cpu(de->ino))
+		goto out_unmap_put;
+
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (de) {
 		einode = f2fs_iget(inode->i_sb, le32_to_cpu(de->ino));
 		if (IS_ERR(einode)) {
@@ -80,11 +124,19 @@ retry:
 			iput(einode);
 			goto out_unmap_put;
 		}
+<<<<<<< HEAD
 		f2fs_delete_entry(de, page, einode);
 		iput(einode);
 		goto retry;
 	}
 	err = __f2fs_add_link(dir, &name, inode);
+=======
+		f2fs_delete_entry(de, page, dir, einode);
+		iput(einode);
+		goto retry;
+	}
+	err = __f2fs_add_link(dir, &name, inode, inode->i_ino, inode->i_mode);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (err)
 		goto out_err;
 
@@ -98,7 +150,11 @@ retry:
 	goto out;
 
 out_unmap_put:
+<<<<<<< HEAD
 	kunmap(page);
+=======
+	f2fs_dentry_kunmap(dir, page);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	f2fs_put_page(page, 0);
 out_err:
 	iput(dir);
@@ -110,6 +166,7 @@ out:
 	return err;
 }
 
+<<<<<<< HEAD
 static int recover_inode(struct inode *inode, struct page *node_page)
 {
 	struct f2fs_inode *raw_inode = F2FS_INODE(node_page);
@@ -132,13 +189,34 @@ static int recover_inode(struct inode *inode, struct page *node_page)
 	f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name = %s",
 			ino_of_node(node_page), raw_inode->i_name);
 	return 0;
+=======
+static void recover_inode(struct inode *inode, struct page *page)
+{
+	struct f2fs_inode *raw = F2FS_INODE(page);
+
+	inode->i_mode = le16_to_cpu(raw->i_mode);
+	i_size_write(inode, le64_to_cpu(raw->i_size));
+	inode->i_atime.tv_sec = le64_to_cpu(raw->i_mtime);
+	inode->i_ctime.tv_sec = le64_to_cpu(raw->i_ctime);
+	inode->i_mtime.tv_sec = le64_to_cpu(raw->i_mtime);
+	inode->i_atime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
+	inode->i_ctime.tv_nsec = le32_to_cpu(raw->i_ctime_nsec);
+	inode->i_mtime.tv_nsec = le32_to_cpu(raw->i_mtime_nsec);
+
+	f2fs_msg(inode->i_sb, KERN_NOTICE, "recover_inode: ino = %x, name = %s",
+			ino_of_node(page), F2FS_INODE(page)->i_name);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 }
 
 static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
 {
 	unsigned long long cp_ver = cur_cp_version(F2FS_CKPT(sbi));
 	struct curseg_info *curseg;
+<<<<<<< HEAD
 	struct page *page;
+=======
+	struct page *page = NULL;
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	block_t blkaddr;
 	int err = 0;
 
@@ -146,20 +224,31 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
 	curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
 	blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
 
+<<<<<<< HEAD
 	/* read node page */
 	page = alloc_page(GFP_F2FS_ZERO);
 	if (!page)
 		return -ENOMEM;
 	lock_page(page);
+=======
+	ra_meta_pages(sbi, blkaddr, 1, META_POR);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 
 	while (1) {
 		struct fsync_inode_entry *entry;
 
+<<<<<<< HEAD
 		err = f2fs_submit_page_bio(sbi, page, blkaddr, READ_SYNC);
 		if (err)
 			return err;
 
 		lock_page(page);
+=======
+		if (blkaddr < MAIN_BLKADDR(sbi) || blkaddr >= MAX_BLKADDR(sbi))
+			return 0;
+
+		page = get_meta_page(sbi, blkaddr);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 
 		if (cp_ver != cpver_of_node(page))
 			break;
@@ -168,11 +257,15 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
 			goto next;
 
 		entry = get_fsync_inode(head, ino_of_node(page));
+<<<<<<< HEAD
 		if (entry) {
 			if (IS_INODE(page) && is_dent_dnode(page))
 				set_inode_flag(F2FS_I(entry->inode),
 							FI_INC_LINK);
 		} else {
+=======
+		if (!entry) {
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 			if (IS_INODE(page) && is_dent_dnode(page)) {
 				err = recover_inode_page(sbi, page);
 				if (err)
@@ -180,22 +273,41 @@ static int find_fsync_dnodes(struct f2fs_sb_info *sbi, struct list_head *head)
 			}
 
 			/* add this fsync inode to the list */
+<<<<<<< HEAD
 			entry = kmem_cache_alloc(fsync_entry_slab, GFP_NOFS);
+=======
+			entry = kmem_cache_alloc(fsync_entry_slab, GFP_F2FS_ZERO);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 			if (!entry) {
 				err = -ENOMEM;
 				break;
 			}
+<<<<<<< HEAD
 
+=======
+			/*
+			 * CP | dnode(F) | inode(DF)
+			 * For this case, we should not give up now.
+			 */
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 			entry->inode = f2fs_iget(sbi->sb, ino_of_node(page));
 			if (IS_ERR(entry->inode)) {
 				err = PTR_ERR(entry->inode);
 				kmem_cache_free(fsync_entry_slab, entry);
+<<<<<<< HEAD
+=======
+				if (err == -ENOENT) {
+					err = 0;
+					goto next;
+				}
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 				break;
 			}
 			list_add_tail(&entry->list, head);
 		}
 		entry->blkaddr = blkaddr;
 
+<<<<<<< HEAD
 		err = recover_inode(entry->inode, page);
 		if (err && err != -ENOENT)
 			break;
@@ -207,6 +319,21 @@ next:
 	unlock_page(page);
 	__free_pages(page, 0);
 
+=======
+		if (IS_INODE(page)) {
+			entry->last_inode = blkaddr;
+			if (is_dent_dnode(page))
+				entry->last_dentry = blkaddr;
+		}
+next:
+		/* check next segment */
+		blkaddr = next_blkaddr_of_node(page);
+		f2fs_put_page(page, 1);
+
+		ra_meta_pages_cond(sbi, blkaddr);
+	}
+	f2fs_put_page(page, 1);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	return err;
 }
 
@@ -230,6 +357,10 @@ static int check_index_in_prev_nodes(struct f2fs_sb_info *sbi,
 	struct f2fs_summary_block *sum_node;
 	struct f2fs_summary sum;
 	struct page *sum_page, *node_page;
+<<<<<<< HEAD
+=======
+	struct dnode_of_data tdn = *dn;
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	nid_t ino, nid;
 	struct inode *inode;
 	unsigned int offset;
@@ -257,6 +388,7 @@ got_it:
 	/* Use the locked dnode page and inode */
 	nid = le32_to_cpu(sum.nid);
 	if (dn->inode->i_ino == nid) {
+<<<<<<< HEAD
 		struct dnode_of_data tdn = *dn;
 		tdn.nid = nid;
 		tdn.node_page = dn->inode_page;
@@ -268,6 +400,17 @@ got_it:
 		tdn.ofs_in_node = le16_to_cpu(sum.ofs_in_node);
 		truncate_data_blocks_range(&tdn, 1);
 		return 0;
+=======
+		tdn.nid = nid;
+		if (!dn->inode_page_locked)
+			lock_page(dn->inode_page);
+		tdn.node_page = dn->inode_page;
+		tdn.ofs_in_node = le16_to_cpu(sum.ofs_in_node);
+		goto truncate_out;
+	} else if (dn->nid == nid) {
+		tdn.ofs_in_node = le16_to_cpu(sum.ofs_in_node);
+		goto truncate_out;
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	}
 
 	/* Get the node page */
@@ -279,6 +422,7 @@ got_it:
 	ino = ino_of_node(node_page);
 	f2fs_put_page(node_page, 1);
 
+<<<<<<< HEAD
 	/* Deallocate previous index in the node page */
 	inode = f2fs_iget(sbi->sb, ino);
 	if (IS_ERR(inode))
@@ -289,6 +433,47 @@ got_it:
 
 	truncate_hole(inode, bidx, bidx + 1);
 	iput(inode);
+=======
+	if (ino != dn->inode->i_ino) {
+		/* Deallocate previous index in the node page */
+		inode = f2fs_iget(sbi->sb, ino);
+		if (IS_ERR(inode))
+			return PTR_ERR(inode);
+	} else {
+		inode = dn->inode;
+	}
+
+	bidx = start_bidx_of_node(offset, F2FS_I(inode)) +
+			le16_to_cpu(sum.ofs_in_node);
+
+	/*
+	 * if inode page is locked, unlock temporarily, but its reference
+	 * count keeps alive.
+	 */
+	if (ino == dn->inode->i_ino && dn->inode_page_locked)
+		unlock_page(dn->inode_page);
+
+	set_new_dnode(&tdn, inode, NULL, NULL, 0);
+	if (get_dnode_of_data(&tdn, bidx, LOOKUP_NODE))
+		goto out;
+
+	if (tdn.data_blkaddr == blkaddr)
+		truncate_data_blocks_range(&tdn, 1);
+
+	f2fs_put_dnode(&tdn);
+out:
+	if (ino != dn->inode->i_ino)
+		iput(inode);
+	else if (dn->inode_page_locked)
+		lock_page(dn->inode_page);
+	return 0;
+
+truncate_out:
+	if (datablock_addr(tdn.node_page, tdn.ofs_in_node) == blkaddr)
+		truncate_data_blocks_range(&tdn, 1);
+	if (dn->inode->i_ino == nid && !dn->inode_page_locked)
+		unlock_page(dn->inode_page);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	return 0;
 }
 
@@ -306,6 +491,13 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
 	if (IS_INODE(page)) {
 		recover_inline_xattr(inode, page);
 	} else if (f2fs_has_xattr_block(ofs_of_node(page))) {
+<<<<<<< HEAD
+=======
+		/*
+		 * Deprecated; xattr blocks should be found from cold log.
+		 * But, we should remain this for backward compatibility.
+		 */
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 		recover_xattr_data(inode, page, blkaddr);
 		goto out;
 	}
@@ -340,7 +532,13 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
 		src = datablock_addr(dn.node_page, dn.ofs_in_node);
 		dest = datablock_addr(page, dn.ofs_in_node);
 
+<<<<<<< HEAD
 		if (src != dest && dest != NEW_ADDR && dest != NULL_ADDR) {
+=======
+		if (src != dest && dest != NEW_ADDR && dest != NULL_ADDR &&
+			dest >= MAIN_BLKADDR(sbi) && dest < MAX_BLKADDR(sbi)) {
+
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 			if (src == NULL_ADDR) {
 				err = reserve_new_block(&dn);
 				/* We should not get -ENOSPC */
@@ -356,14 +554,23 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
 
 			/* write dummy data page */
 			recover_data_page(sbi, NULL, &sum, src, dest);
+<<<<<<< HEAD
 			update_extent_cache(dest, &dn);
+=======
+			dn.data_blkaddr = dest;
+			set_data_blkaddr(&dn);
+			f2fs_update_extent_cache(&dn);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 			recovered++;
 		}
 		dn.ofs_in_node++;
 	}
 
+<<<<<<< HEAD
 	/* write node page in place */
 	set_summary(&sum, dn.nid, 0, 0);
+=======
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (IS_INODE(dn.node_page))
 		sync_inode_page(&dn);
 
@@ -386,7 +593,11 @@ static int recover_data(struct f2fs_sb_info *sbi,
 {
 	unsigned long long cp_ver = cur_cp_version(F2FS_CKPT(sbi));
 	struct curseg_info *curseg;
+<<<<<<< HEAD
 	struct page *page;
+=======
+	struct page *page = NULL;
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	int err = 0;
 	block_t blkaddr;
 
@@ -394,6 +605,7 @@ static int recover_data(struct f2fs_sb_info *sbi,
 	curseg = CURSEG_I(sbi, type);
 	blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
 
+<<<<<<< HEAD
 	/* read node page */
 	page = alloc_page(GFP_F2FS_ZERO);
 	if (!page)
@@ -412,14 +624,52 @@ static int recover_data(struct f2fs_sb_info *sbi,
 
 		if (cp_ver != cpver_of_node(page))
 			break;
+=======
+	while (1) {
+		struct fsync_inode_entry *entry;
+
+		if (blkaddr < MAIN_BLKADDR(sbi) || blkaddr >= MAX_BLKADDR(sbi))
+			break;
+
+		ra_meta_pages_cond(sbi, blkaddr);
+
+		page = get_meta_page(sbi, blkaddr);
+
+		if (cp_ver != cpver_of_node(page)) {
+			f2fs_put_page(page, 1);
+			break;
+		}
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 
 		entry = get_fsync_inode(head, ino_of_node(page));
 		if (!entry)
 			goto next;
+<<<<<<< HEAD
 
 		err = do_recover_data(sbi, entry->inode, page, blkaddr);
 		if (err)
 			break;
+=======
+		/*
+		 * inode(x) | CP | inode(x) | dnode(F)
+		 * In this case, we can lose the latest inode(x).
+		 * So, call recover_inode for the inode update.
+		 */
+		if (entry->last_inode == blkaddr)
+			recover_inode(entry->inode, page);
+		if (entry->last_dentry == blkaddr) {
+			err = recover_dentry(entry->inode, page);
+			if (err) {
+				f2fs_put_page(page, 1);
+				break;
+			}
+		}
+		err = do_recover_data(sbi, entry->inode, page, blkaddr);
+		if (err) {
+			f2fs_put_page(page, 1);
+			break;
+		}
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 
 		if (entry->blkaddr == blkaddr) {
 			iput(entry->inode);
@@ -429,11 +679,16 @@ static int recover_data(struct f2fs_sb_info *sbi,
 next:
 		/* check next segment */
 		blkaddr = next_blkaddr_of_node(page);
+<<<<<<< HEAD
 	}
 
 	unlock_page(page);
 	__free_pages(page, 0);
 
+=======
+		f2fs_put_page(page, 1);
+	}
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (!err)
 		allocate_new_segments(sbi);
 	return err;
@@ -455,7 +710,11 @@ int recover_fsync_data(struct f2fs_sb_info *sbi)
 	INIT_LIST_HEAD(&inode_list);
 
 	/* step #1: find fsynced inode numbers */
+<<<<<<< HEAD
 	sbi->por_doing = true;
+=======
+	set_sbi_flag(sbi, SBI_POR_DOING);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 
 	/* prevent checkpoint */
 	mutex_lock(&sbi->cp_mutex);
@@ -479,12 +738,23 @@ out:
 	destroy_fsync_dnodes(&inode_list);
 	kmem_cache_destroy(fsync_entry_slab);
 
+<<<<<<< HEAD
+=======
+	/* truncate meta pages to be used by the recovery */
+	truncate_inode_pages_range(META_MAPPING(sbi),
+			MAIN_BLKADDR(sbi) << PAGE_CACHE_SHIFT, -1);
+
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (err) {
 		truncate_inode_pages(NODE_MAPPING(sbi), 0);
 		truncate_inode_pages(META_MAPPING(sbi), 0);
 	}
 
+<<<<<<< HEAD
 	sbi->por_doing = false;
+=======
+	clear_sbi_flag(sbi, SBI_POR_DOING);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	if (err) {
 		discard_next_dnode(sbi, blkaddr);
 
@@ -494,8 +764,16 @@ out:
 		set_ckpt_flags(sbi->ckpt, CP_ERROR_FLAG);
 		mutex_unlock(&sbi->cp_mutex);
 	} else if (need_writecp) {
+<<<<<<< HEAD
 		mutex_unlock(&sbi->cp_mutex);
 		write_checkpoint(sbi, false);
+=======
+		struct cp_control cpc = {
+			.reason = CP_RECOVERY,
+		};
+		mutex_unlock(&sbi->cp_mutex);
+		write_checkpoint(sbi, &cpc);
+>>>>>>> 9dfb3ffb8708d72b45a880196dab8fdbf63625d9
 	} else {
 		mutex_unlock(&sbi->cp_mutex);
 	}
