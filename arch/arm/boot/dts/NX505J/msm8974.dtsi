@@ -1573,7 +1573,7 @@
 		qcom,bytes-per-beat = <8>;
 	};
 
-	qcom,msm-cpufreq@0 {
+/*	qcom,msm-cpufreq@0 {
 		reg = <0 4>;
 		compatible = "qcom,msm-cpufreq";
 		qcom,cpufreq-table =
@@ -1592,7 +1592,7 @@
 			< 1958400 1728000 7102 >,
 			< 2265600 1728000 7102 >,
 			< 2457600 1728000 7102 >;
-	};
+	};*/
 
 	usb3: qcom,ssusb@f9200000 {
 		compatible = "qcom,dwc-usb3-msm";
