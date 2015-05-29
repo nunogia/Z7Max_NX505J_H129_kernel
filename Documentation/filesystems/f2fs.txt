@@ -132,6 +132,16 @@ nobarrier              This option can be used if underlying storage guarantees
 		       but f2fs still guarantees the write ordering of all the
 		       data writes.
 
+fastboot               This option is used when a system wants to reduce mount
+                       time as much as possible, even though normal performance
+		       can be sacrificed.
+extent_cache           Enable an extent cache based on rb-tree, it can cache
+                       as many as extent which map between contiguous logical
+                       address and physical address per inode, resulting in
+                       increasing the cache hit ratio.
+noinline_data          Disable the inline data feature, inline data feature is
+                       enabled by default.
+
 ================================================================================
 DEBUGFS ENTRIES
 ================================================================================
@@ -192,14 +202,21 @@ Files in /sys/fs/f2fs/<devname>
 
  ipu_policy                   This parameter controls the policy of in-place
                               updates in f2fs. There are five policies:
-                               0: F2FS_IPU_FORCE, 1: F2FS_IPU_SSR,
-                               2: F2FS_IPU_UTIL,  3: F2FS_IPU_SSR_UTIL,
-                               4: F2FS_IPU_DISABLE.
+                               0x01: F2FS_IPU_FORCE, 0x02: F2FS_IPU_SSR,
+                               0x04: F2FS_IPU_UTIL,  0x08: F2FS_IPU_SSR_UTIL,
+                               0x10: F2FS_IPU_FSYNC.
 
  min_ipu_util                 This parameter controls the threshold to trigger
                               in-place-updates. The number indicates percentage
                               of the filesystem utilization, and used by
                               F2FS_IPU_UTIL and F2FS_IPU_SSR_UTIL policies.
+
+ min_fsync_blocks             This parameter controls the threshold to trigger
+                              in-place-updates when F2FS_IPU_FSYNC mode is set.
+			      The number indicates the number of dirty pages
+			      when fsync needs to flush on its call path. If
+			      the number is less than this value, it triggers
+			      in-place-updates.
 
  max_victim_search	      This parameter controls the number of trials to
 			      find a victim segment when conducting SSR and
