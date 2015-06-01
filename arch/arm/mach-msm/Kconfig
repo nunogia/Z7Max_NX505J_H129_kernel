@@ -3060,10 +3060,4 @@ config KRAIT_REGULATOR
 	 regulators running in ganged mode inside the PMIC. Enable
 	 this option to support such configurations.
 
-config MSM_CPU_VOLTAGE_CONTROL
-	bool "Userspace CPU Voltage Control"
-	default y
-	help
-	  This enables userspace CPU Voltage Control.
-
 endif
