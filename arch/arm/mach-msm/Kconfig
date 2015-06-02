@@ -287,6 +287,8 @@ config ARCH_MSM8974
 	select ARCH_WANT_KMAP_ATOMIC_FLUSH
 	select KRAIT_REGULATOR
 	select ENABLE_VMALLOC_SAVINGS
+	select USE_LDRDSTRD_OVER_LDMSTM
+	select ARM_PLD_64BYTE
 
 config ARCH_APQ8084
 	bool "APQ8084"
@@ -529,6 +531,7 @@ config ARCH_MSM8226
 	select MSM_RPM_STATS_LOG
 	select ARCH_WANT_KMAP_ATOMIC_FLUSH
 	select ENABLE_VMALLOC_SAVINGS
+	select HAS_MACH_MEMUTILS
 
 config ARCH_MSMSAMARIUM
 	bool "MSMSAMARIUM"
@@ -3066,4 +3069,21 @@ config MSM_CPU_VOLTAGE_CONTROL
 	help
 	  This enables userspace CPU Voltage Control.
 
+config HAS_MACH_MEMUTILS
+	default n
+	bool "Motorola MSM memcpy enhancements"
+	help
+		Faster memcpy performance for Krait
+
+config USE_LDRDSTRD_OVER_LDMSTM
+	default n
+	bool "Use LDRD/STRD instead of LDM/STM - for cortex-A15"
+	help
+		Optimization for cortex-A15 / Krait 
+
+config ARM_PLD_64BYTE
+	default n
+	bool "Use 64 Byte Preload Cache Size - cortex-A15"
+	help
+		Use 64 Byte Preload Cache Size for cortex-A15 / Krait
 endif
